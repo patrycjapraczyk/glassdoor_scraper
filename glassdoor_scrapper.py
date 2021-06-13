@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from time import sleep
+import geckodriver_autoinstaller
 
 
 class GlassdoorScrapper:
@@ -9,9 +10,8 @@ class GlassdoorScrapper:
 
     def __init__(self):
         # create a new Firefox session
-        options = Options()
-        #options.add_argument('headless')
-        self.driver = webdriver.Firefox(options=options)
+        geckodriver_autoinstaller.install()
+        self.driver = webdriver.Firefox()
         self.driver.implicitly_wait(30)
         self.driver.set_window_size(1120, 1000)
 
@@ -32,30 +32,27 @@ class GlassdoorScrapper:
 
     def get_jobs(self, keyword, location='', num_jobs=10):
         self.search_jobs(keyword, location, num_jobs)
-
-        jobs = []
-        job_elems = self.driver.find_element_by_class_name("jl")
-
-        while len(jobs) < num_jobs:
+        jobs = self.driver.find_elements_by_class_name('react-job-listing')
+        jobs_counter = 0
+        while jobs_counter < num_jobs:
             self.close_sign_up_modal()
-            job = self.extract_job_info()
+            job = self.extract_job_info(jobs[jobs_counter])
             print(str(job))
             jobs.append(job)
             sleep(5)
+            jobs_counter += 1
 
-    def extract_job_info(self):
-        company_name = self.driver.find_element_by_xpath('.//div[@class="employerName"]').text
-        location = self.driver.find_element_by_xpath('.//div[@class="location"]').text
-        job_title = self.driver.find_element_by_xpath('.//div[contains(@class, "title")]').text
-        job_description = self.driver.find_element_by_xpath('.//div[@class="jobDescriptionContent desc"]').text
-
+    def extract_job_info(self, job):
+        company_name = job.find_elements_by_class_name('css-l2wjgv')[0].text
+        location = job.find_elements_by_class_name('pr-xxsm')[0].text
+        job_title = job.find_elements_by_class_name('eigr9kq2')[0].text
+        #job_description = self.driver.find_element_by_xpath('.//div[@class="jobDescriptionContent desc"]').text
         job = {
             'company_name': company_name,
             'location': location,
-            'job_title': job_title,
-            'job_description': job_description
+            'job_title': job_title
+            #'job_description': job_description
         }
-
         return job
 
 
